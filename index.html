@@ -579,8 +579,11 @@ let pLotes = Promise.all([
         mostrarResultado("Consultando base da rede viária integral...", "info");
 
         const urlGeocode = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(buscaFinal)}&limit=5&accept-language=pt-BR&email=geosaude.sorocaba.app@gmail.com`;
-        fetch(urlGeocode)
-            .then(res => { if (!res.ok) throw new Error(`Erro de rede.`); return res.json(); })
+        fetch(urlGeocode, {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' }
+})
+    .then(res => { if (!res.ok) throw new Error(`Erro de rede.`); return res.json(); })
             .then(resultados => {
                 if (resultados.length === 0) throw new Error("Endereço não encontrado na base de dados global.");
 
@@ -615,7 +618,7 @@ let pLotes = Promise.all([
                     restaurarBotaoBusca();
                 } else {
                     const urlOverpass = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(`[out:json][timeout:15];area["name"="Sorocaba"]->.a;way(area.a)["name"="${nomeOficial}"];out geom;`)}`;
-                    fetch(urlOverpass)
+                   fetch(urlOverpass, { headers: { 'Accept': 'application/json' } })
                         .then(res => res.ok ? res.json() : { elements: [] })
                         .then(overpassData => {
                             renderizarMapaLinhaUbs(latCentro, lonCentro, false, popupHTML, overpassData, resultados, nomeOficial);
