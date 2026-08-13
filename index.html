@@ -348,17 +348,29 @@ let pLotes = Promise.all([
         if (!lotesDaRua || lotesDaRua.length === 0) return null;
         let nomeOficialRuaLote = lotesDaRua[0].properties[keyEndereco];
 
-        let exato = lotesDaRua.find(l => l.properties[keyNumero] !== null && parseInt(l.properties[keyNumero]) === numeroBuscado);
+       let exato = lotesDaRua.find(l => l.properties[keyNumero] !== null && parseInt(l.properties[keyNumero]) === numeroBuscado);
         if (exato) return { feature: exato, tipo: 'exato', nome: nomeOficialRuaLote, refFeatureUbsLote: exato };
+        
         let comNumeros = lotesDaRua.filter(l => l.properties[keyNumero] !== null && !isNaN(parseInt(l.properties[keyNumero])));
         if (comNumeros.length === 0) {
             return { feature: lotesDaRua[0], tipo: 'aproximado_rua', nome: nomeOficialRuaLote, refFeatureUbsLote: lotesDaRua[0] };
         }
 
-        comNumeros.sort((a, b) => parseInt(a.properties[keyNumero]) - parseInt(b.properties[keyNumero]));
+        // CORREÇÃO: Filtrar pela paridade (Par ou Ímpar) para manter no mesmo lado da rua
+        let isParBuscado = numeroBuscado % 2 === 0;
+        let comNumerosDoMesmoLado = comNumeros.filter(l => {
+            let numLote = parseInt(l.properties[keyNumero]);
+            return (numLote % 2 === 0) === isParBuscado;
+        });
+
+        // Fallback de segurança: Se a rua for anômala e não tiver nenhum número do mesmo lado cadastrado, 
+        // usamos todos os números para não quebrar a busca
+        let arrayParaBusca = comNumerosDoMesmoLado.length > 0 ? comNumerosDoMesmoLado : comNumeros;
+
+        arrayParaBusca.sort((a, b) => parseInt(a.properties[keyNumero]) - parseInt(b.properties[keyNumero]));
         let menor = null, maior = null;
 
-        for(let l of comNumeros) {
+        for(let l of arrayParaBusca) {
             let num = parseInt(l.properties[keyNumero]);
             if(num <= numeroBuscado) menor = l;
             if(num >= numeroBuscado && !maior) maior = l;
