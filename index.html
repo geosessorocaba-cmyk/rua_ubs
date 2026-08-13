@@ -177,18 +177,18 @@
         if (e.key === 'Enter' && !document.getElementById('btnBuscar').disabled) { buscarEndereco(); }
     });
 
-    let pPoligonos = fetch('abrangencia_ubs_sorocaba.json')
-        .then(response => response.ok ? response.json() : Promise.reject())
-        .then(data => { dadosUbs = data; })
-        .catch(() => mostrarResultado("Erro ao carregar banco de dados dos polígonos das UBS.", "erro"));
+    let pPoligonos = fetch('./abrangencia_ubs_sorocaba.json')
+    .then(response => response.ok ? response.json() : Promise.reject())
+    .then(data => { dadosUbs = data; })
+    .catch(() => mostrarResultado("Erro ao carregar banco de dados dos polígonos das UBS.", "erro"));
 
-    console.log("Iniciando indexação paralela das partes de lotes...");
-    let pLotes = Promise.all([
-        fetch('lotes_sorocaba_pontos/lotes_sorocaba_pontos_part1.json').then(r => r.ok ? r.json() : Promise.reject()),
-        fetch('lotes_sorocaba_pontos/lotes_sorocaba_pontos_part2.json').then(r => r.ok ? r.json() : Promise.reject()),
-        fetch('lotes_sorocaba_pontos/lotes_sorocaba_pontos_part3.json').then(r => r.ok ? r.json() : Promise.reject()),
-        fetch('lotes_sorocaba_pontos/lotes_sorocaba_pontos_part4.json').then(r => r.ok ? r.json() : Promise.reject())
-    ])
+console.log("Iniciando indexação paralela das partes de lotes...");
+let pLotes = Promise.all([
+    fetch('./lotes_sorocaba_pontos/lotes_sorocaba_pontos_part1.json').then(r => r.ok ? r.json() : Promise.reject()),
+    fetch('./lotes_sorocaba_pontos/lotes_sorocaba_pontos_part2.json').then(r => r.ok ? r.json() : Promise.reject()),
+    fetch('./lotes_sorocaba_pontos/lotes_sorocaba_pontos_part3.json').then(r => r.ok ? r.json() : Promise.reject()),
+    fetch('./lotes_sorocaba_pontos/lotes_sorocaba_pontos_part4.json').then(r => r.ok ? r.json() : Promise.reject())
+])
     .then(parts => {
         let totalLotes = 0;
         parts.forEach(part => {
