@@ -10,40 +10,180 @@
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
     <style>
+        :root {
+            --bg-body: #f4f6f9;
+            --bg-card: #ffffff;
+            --text-color: #333333;
+            --text-heading: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+            /* Atualizado para degradê suave inspirado na referência */
+            --header-bg: linear-gradient(135deg, #003a70 0%, #00529b 50%, #003a70 100%);
+            --header-text: #ffffff;
+            --input-bg: #ffffff;
+            --input-text: #333333;
+            --btn-bg: #2563eb;
+            --modal-bg: #ffffff;
+            --toggle-bg: rgba(255, 255, 255, 0.2);
+            --shadow-color: rgba(0, 0, 0, 0.05);
+            --rotulo-shadow: #FFF;
+        }
+
+        body.dark-theme {
+            --bg-body: #0b1329;
+            --bg-card: #131e36;
+            --text-color: #cbd5e1;
+            --text-heading: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #1e293b;
+            /* Atualizado para degradê suave escuro inspirado na referência */
+            --header-bg: linear-gradient(135deg, #060b17 0%, #0d1933 50%, #060b17 100%);
+            --header-text: #ffffff;
+            --input-bg: #0b1329;
+            --input-text: #f8fafc;
+            --btn-bg: #3b82f6;
+            --modal-bg: #131e36;
+            --toggle-bg: rgba(255, 255, 255, 0.15);
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --rotulo-shadow: #000;
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0; 
-            padding: 20px; 
-            background-color: #f4f6f9; 
-            color: #333;
+            padding: 0 0 30px 0; 
+            background-color: var(--bg-body); 
+            color: var(--text-color);
         }
+
+        /* BANNER DO TOPO / HEADER */
+        .header-banner {
+            background: var(--header-bg); /* Modificado de background-color para background suportar gradiente */
+            color: var(--header-text);
+            padding: 15px 15px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 25px;
+            width: 100%;
+            position: relative; /* Adicionado para base de ancoragem do botão tema no Desktop */
+        }
+
+        .header-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            /* position: relative removido para liberar o botão de tema */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle-btn {
+            background: var(--toggle-bg);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px; 
+            color: #facc15;
+            transition: transform 0.2s, background-color 0.2s;
+            margin-bottom: 10px;
+            z-index: 10;
+        }
+
+        .theme-toggle-btn:hover {
+            transform: scale(1.08);
+        }
+
+        .header-brand-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 10px;
+        }
+
+        /* Caixas de logo com tamanho fixo para forçar proporção igual */
+        .logo-box {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            flex-shrink: 0;
+            width: 75px;
+            height: 75px;
+        }
+
+        .logo-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; 
+        }
+
+        .header-titles {
+            flex: 1;
+            text-align: center;
+        }
+
+        .header-titles h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+
+        .header-titles p {
+            margin: 4px 0 0 0;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 400;
+        }
+
+        /* CONTAINER PRINCIPAL */
         .container { 
             max-width: 850px;
             margin: 0 auto; 
-            background: white; 
+            background: var(--bg-card); 
             padding: 25px; 
             border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 15px var(--shadow-color);
         }
-        h2 { margin-top: 0; color: #1e293b; font-size: 24px; }
-        p { color: #64748b; font-size: 15px; margin-bottom: 20px; }
+
+        h2 { margin-top: 0; color: var(--text-heading); font-size: 24px; }
+        p { color: var(--text-muted); font-size: 15px; margin-bottom: 20px; }
         
         .busca-box { 
             display: flex;
             gap: 10px; 
             margin-bottom: 20px; 
         }
+
         input[type="text"] { 
             flex: 1;
             padding: 14px; 
-            border: 1px solid #cbd5e1; 
+            border: 1px solid var(--border-color); 
             border-radius: 6px; 
             font-size: 16px; 
             outline: none;
-            transition: border-color 0.2s;
+            background-color: var(--input-bg);
+            color: var(--input-text);
         }
+
         input[type="text"]:focus { border-color: #3b82f6; }
-        button { 
+
+        button#btnBuscar { 
             padding: 14px 28px;
             background-color: #94a3b8; 
             color: white; 
@@ -67,6 +207,7 @@
             z-index: 1; 
             box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
         }
+
         #resultado { 
             margin-top: 20px;
             padding: 18px; 
@@ -81,68 +222,170 @@
         .erro { background-color: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
         .info { background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
 
+        body.dark-theme .sucesso { background-color: #064e3b; color: #a7f3d0; border-color: #047857; }
+        body.dark-theme .erro { background-color: #7f1d1d; color: #fca5a5; border-color: #991b1b; }
+        body.dark-theme .info { background-color: #1e3a8a; color: #bfdbfe; border-color: #1d4ed8; }
+
         .rotulo-ubs {
             background: none;
             border: none;
             box-shadow: none;
             font-size: 14px;
             font-weight: 900;
-            color: #1e293b;
+            color: var(--text-heading);
             text-align: center;
             text-shadow: 
-                -2px -2px 0 #FFF, 2px -2px 0 #FFF, 
-                -2px 2px 0 #FFF, 2px 2px 0 #FFF,
-                -1px 0px 0 #FFF, 1px 0px 0 #FFF,
-                0px -1px 0 #FFF, 0px 1px 0 #FFF;
+                -2px -2px 0 var(--rotulo-shadow), 2px -2px 0 var(--rotulo-shadow), 
+                -2px 2px 0 var(--rotulo-shadow), 2px 2px 0 var(--rotulo-shadow),
+                -1px 0px 0 var(--rotulo-shadow), 1px 0px 0 var(--rotulo-shadow),
+                0px -1px 0 var(--rotulo-shadow), 0px 1px 0 var(--rotulo-shadow);
         }
 
         .ubs-item { margin-bottom: 8px; }
         .ubs-clickable {
             cursor: pointer;
             text-decoration: underline;
-            color: #065f46;
+            color: #10b981;
             transition: color 0.2s;
         }
-        .ubs-clickable:hover { color: #047857; }
+        .ubs-clickable:hover { color: #059669; }
         
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); z-index: 2000;
+            background: rgba(0,0,0,0.5); z-index: 2000;
             display: none; align-items: center; justify-content: center;
         }
+
         .modal-content {
-            background: #fff;
+            background: var(--modal-bg);
             padding: 25px; border-radius: 10px;
             width: 90%; max-width: 450px; position: relative;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            color: #333; font-weight: normal;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            color: var(--text-color); font-weight: normal;
             line-height: 1.6;
         }
+
+        .modal-opcoes {
+            max-height: min(55vh, 360px);
+            overflow-y: auto;
+            margin-top: 12px;
+            padding-right: 4px;
+        }
+
+        .opcao-logradouro {
+            display: block;
+            width: 100%;
+            padding: 12px 14px;
+            margin: 0 0 8px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--input-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .opcao-logradouro:hover,
+        .opcao-logradouro:focus {
+            border-color: #3b82f6;
+            outline: 2px solid rgba(59, 130, 246, 0.2);
+        }
+
         .modal-close {
             position: absolute;
             top: 12px; right: 18px;
-            cursor: pointer; font-size: 22px; font-weight: bold; color: #94a3b8;
+            cursor: pointer; font-size: 22px; font-weight: bold; color: var(--text-muted);
             transition: color 0.2s;
         }
+
         .modal-close:hover { color: #ef4444; }
-        .modal-titulo { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 10px; margin-top: 0;}
+        .modal-titulo { font-size: 18px; font-weight: bold; color: var(--text-heading); margin-bottom: 10px; margin-top: 0;}
         .modal-endereco { margin-bottom: 15px; }
         .modal-horario { font-size: 15px; }
 
-        @media (max-width: 600px) {
-            body { padding: 10px; }
-            .container { padding: 15px; }
+        /* REGRAS RESPONSIVAS DE DESKTOP E CELULAR */
+        @media (min-width: 769px) {
+            .header-container {
+                max-width: 850px; /* Alinhado estritamente com o container principal para juntar as logos */
+                flex-direction: row;
+                justify-content: center;
+            }
+            .theme-toggle-btn {
+                position: absolute;
+                right: 25px; /* Jogado para o canto superior direito da tela inteira */
+                top: 20px;
+                transform: none; /* Removida a transformação de centralização Y anterior */
+                margin-bottom: 0;
+                width: 40px; /* Mantém o tamanho original de desktop sugerido */
+                height: 40px;
+                font-size: 18px;
+            }
+            .theme-toggle-btn:hover {
+                transform: scale(1.08); /* Ajustado apenas para aumentar a escala no hover */
+            }
+            .logo-box {
+                width: 115px; /* Tamanho das logos significativamente maior no Desktop */
+                height: 115px;
+            }
+            .header-titles h1 {
+                font-size: 24px;
+            }
+            .header-titles p {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body { padding-bottom: 15px; }
+            .container { padding: 18px; margin: 0 10px; }
+            .header-titles h1 { font-size: 17px; }
+            .header-titles p { font-size: 11px; }
+            .logo-box { width: 65px; height: 65px; }
+        }
+
+        @media (max-width: 500px) {
             .busca-box { flex-direction: column; }
-            button { width: 100%; }
+            button#btnBuscar { width: 100%; }
             h2 { font-size: 20px; }
+            .logo-box { width: 60px; height: 60px; padding: 4px; }
+            .header-titles h1 { font-size: 15px; }
+            .header-titles p { font-size: 10px; line-height: 1.1; }
+            .theme-toggle-btn { width: 28px; height: 28px; font-size: 14px; margin-bottom: 8px;}
+            .header-banner { padding: 10px 8px; }
         }
     </style>
 </head>
 <body>
 
+<header class="header-banner">
+    <button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Alternar Tema Claro/Escuro" title="Alternar Modo Claro/Escuro">
+        <span id="themeIcon">🌙</span>
+    </button>
+    
+    <div class="header-container">
+        <div class="header-brand-row">
+            <div class="logo-box">
+                <!-- Alterado para puxar da nova pasta "image" -->
+                <img src="image/logo_prefeitura_sorocaba_sp.png" alt="Prefeitura de Sorocaba" class="logo-img">
+            </div>
+
+            <div class="header-titles">
+                <h1>Descubra sua UBS - Sorocaba (SP)</h1>
+                <p>Prefeitura Municipal de Sorocaba – Secretaria da Saúde</p>
+            </div>
+
+            <div class="logo-box">
+                <!-- Alterado para puxar da nova pasta "image" e corrigido para a extensão .jpg -->
+                <img src="image/logo_vigilancia_e_saude_sorocaba_sp.jpg" alt="Vigilância em Saúde" class="logo-img">
+            </div>
+        </div>
+    </div>
+</header>
+
 <div class="container">
-    <h2>Descubra sua UBS - Sorocaba (SP)</h2>
+    <h2>Busca de Endereço e Abrangência</h2>
     <p>Digite seu logradouro (Exemplos: Avenida Itavuvu, Avenida Brasil 60 ou 18071650):</p>
     
     <div class="busca-box">
@@ -163,7 +406,47 @@
     </div>
 </div>
 
+<div id="modal-logradouros" class="modal-overlay" onclick="fecharModalLogradourosFora(event)">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-logradouros-titulo">
+        <span class="modal-close" onclick="fecharModalLogradouros()">×</span>
+        <h3 id="modal-logradouros-titulo" class="modal-titulo">Selecione o logradouro</h3>
+        <div id="modal-logradouros-opcoes" class="modal-opcoes"></div>
+    </div>
+</div>
+
 <script>
+    // =========================================================================
+    // LÓGICA DE ALTERNÂNCIA DE TEMA (MODO CLARO / ESCURO)
+    // =========================================================================
+    function toggleTheme() {
+        const body = document.body;
+        const themeIcon = document.getElementById('themeIcon');
+        if (body.classList.contains('dark-theme')) {
+            body.classList.remove('dark-theme');
+            themeIcon.innerText = '🌙';
+            localStorage.setItem('theme_preference', 'light');
+        } else {
+            body.classList.add('dark-theme');
+            themeIcon.innerText = '☀️';
+            localStorage.setItem('theme_preference', 'dark');
+        }
+    }
+
+    // Aplica tema salvo no LocalStorage no carregamento inicial
+    (function aplicarTemaSalvo() {
+        const temaSalvo = localStorage.getItem('theme_preference');
+        if (temaSalvo === 'dark') {
+            document.body.classList.add('dark-theme');
+            document.addEventListener('DOMContentLoaded', () => {
+                const icon = document.getElementById('themeIcon');
+                if (icon) icon.innerText = '☀️';
+            });
+        }
+    })();
+
+    // =========================================================================
+    // LÓGICA DE BUSCA, MAPA E LOTES
+    // =========================================================================
     let dadosUbs = null;
     let indexLotesPorRua = new Map(); 
     let map = null;
@@ -172,23 +455,25 @@
     let keyEndereco = "AL_Endere?";
     let keyNumero = "AL_Numera?";
     let keyUbsLote = "UBS";
+    let titulosLogradouro = /\b(?:DOUTOR|DRA|DOUTORA|PROFESSOR|PROFESSORA|PADRE|FREI|DOM|MONSENHOR|COMENDADOR|CAPITAO|MAJOR|DESEMBARGADOR)\b/g;
+    let contadorCep = 0;
 
     document.getElementById('endereco').addEventListener('keypress', function(e) {
         if (e.key === 'Enter' && !document.getElementById('btnBuscar').disabled) { buscarEndereco(); }
     });
 
-    let pPoligonos = fetch('./abrangencia_ubs_sorocaba.json')
-    .then(response => response.ok ? response.json() : Promise.reject())
-    .then(data => { dadosUbs = data; })
-    .catch(() => mostrarResultado("Erro ao carregar banco de dados dos polígonos das UBS.", "erro"));
+    let pPoligonos = fetch('abrangencia_ubs_sorocaba.json')
+        .then(response => response.ok ? response.json() : Promise.reject())
+        .then(data => { dadosUbs = data; })
+        .catch(() => mostrarResultado("Erro ao carregar banco de dados dos polígonos das UBS.", "erro"));
 
-console.log("Iniciando indexação paralela das partes de lotes...");
-let pLotes = Promise.all([
-    fetch('./lotes_sorocaba_pontos/lotes_sorocaba_pontos_part1.json').then(r => r.ok ? r.json() : Promise.reject()),
-    fetch('./lotes_sorocaba_pontos/lotes_sorocaba_pontos_part2.json').then(r => r.ok ? r.json() : Promise.reject()),
-    fetch('./lotes_sorocaba_pontos/lotes_sorocaba_pontos_part3.json').then(r => r.ok ? r.json() : Promise.reject()),
-    fetch('./lotes_sorocaba_pontos/lotes_sorocaba_pontos_part4.json').then(r => r.ok ? r.json() : Promise.reject())
-])
+    console.log("Iniciando indexação paralela das partes de lotes...");
+    let pLotes = Promise.all([
+        fetch('lotes_sorocaba_pontos/lotes_sorocaba_pontos_part1.json').then(r => r.ok ? r.json() : Promise.reject()),
+        fetch('lotes_sorocaba_pontos/lotes_sorocaba_pontos_part2.json').then(r => r.ok ? r.json() : Promise.reject()),
+        fetch('lotes_sorocaba_pontos/lotes_sorocaba_pontos_part3.json').then(r => r.ok ? r.json() : Promise.reject()),
+        fetch('lotes_sorocaba_pontos/lotes_sorocaba_pontos_part4.json').then(r => r.ok ? r.json() : Promise.reject())
+    ])
     .then(parts => {
         let totalLotes = 0;
         parts.forEach(part => {
@@ -221,7 +506,29 @@ let pLotes = Promise.all([
         let t = texto.replace(/\d+/g, '').replace(/[,-]/g, ' ').trim();
         t = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
         t = t.replace(/\bAV\b/g, 'AVENIDA').replace(/\bR\b/g, 'RUA').replace(/\bSTA\b/g, 'SANTA').replace(/\bSTO\b/g, 'SANTO').replace(/\bS\b/g, 'SAO').replace(/\bDR\b/g, 'DOUTOR').replace(/\bPROF\b/g, 'PROFESSOR');
-        return t.replace(/\s+/g, ' ').trim();
+        return t.replace(titulosLogradouro, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function normalizarTextoBusca(texto) {
+        return normalizarApenasRua(texto).replace(/\b(?:RUA|AVENIDA|ALAMEDA|RODOVIA|TRAVESSA|PRACA|ESTRADA)\b/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function obterNomeRua(feature) {
+        return feature && feature.address ? (feature.address.road || feature.address.pedestrian || feature.address.square || feature.name) : (feature ? feature.name : '');
+    }
+
+    function pontuarNomeRua(nome, busca) {
+        const nomeNorm = normalizarTextoBusca(nome);
+        const buscaNorm = normalizarTextoBusca(busca);
+        if (!nomeNorm || !buscaNorm) return -1;
+        if (nomeNorm === buscaNorm) return 1000;
+        if (nomeNorm.startsWith(buscaNorm)) return 800 - nomeNorm.length;
+        if (nomeNorm.includes(` ${buscaNorm} `) || nomeNorm.includes(buscaNorm)) return 500 - nomeNorm.length;
+        return -1;
+    }
+
+    function ordenarResultadosPorNome(resultados, busca) {
+        return [...resultados].sort((a, b) => pontuarNomeRua(obterNomeRua(b), busca) - pontuarNomeRua(obterNomeRua(a), busca));
     }
 
     function restaurarBotaoBusca() {
@@ -229,7 +536,7 @@ let pLotes = Promise.all([
         if (btn) {
             btn.disabled = false;
             btn.innerText = "Buscar";
-            btn.style.backgroundColor = "#2563eb";
+            btn.style.backgroundColor = "var(--btn-bg)";
             btn.style.cursor = "pointer";
         }
     }
@@ -271,6 +578,136 @@ let pLotes = Promise.all([
         if (event.target === document.getElementById('modal-ubs')) fecharPopupUbs();
     }
 
+    function fecharModalLogradouros() {
+        document.getElementById('modal-logradouros').style.display = 'none';
+    }
+
+    function fecharModalLogradourosFora(event) {
+        if (event.target === document.getElementById('modal-logradouros')) fecharModalLogradouros();
+    }
+
+    function extrairBairro(endereco) {
+        if (!endereco) return 'Bairro não informado';
+        const partes = endereco.split(' - ');
+        return partes.length > 1 ? partes[1].split(',')[0].trim() : 'Bairro não informado';
+    }
+
+    function obterBairroNominatim(resultadoItem) {
+        const endereco = resultadoItem && resultadoItem.address;
+        return endereco ? (endereco.suburb || endereco.neighbourhood || endereco.city_district || '') : '';
+    }
+
+    function formatarLinhaLocalizacao(bairro) {
+        return bairro ? `${bairro}, Sorocaba, São Paulo, Brasil` : 'Sorocaba, São Paulo, Brasil';
+    }
+
+    function mostrarOpcoesLogradouro(opcoes, aoSelecionar) {
+        const lista = document.getElementById('modal-logradouros-opcoes');
+        lista.innerHTML = '';
+        opcoes.forEach(opcao => {
+            const botao = document.createElement('button');
+            botao.type = 'button';
+            botao.className = 'opcao-logradouro';
+            botao.innerHTML = `<b>${opcao.nome.toUpperCase()}</b><br><small>${opcao.bairro}</small>`;
+            botao.addEventListener('click', () => {
+                fecharModalLogradouros();
+                aoSelecionar(opcao);
+            });
+            lista.appendChild(botao);
+        });
+        document.getElementById('modal-logradouros').style.display = 'flex';
+    }
+
+    function selecionarLogradouroLocal(opcao) {
+        const lotesDaRua = opcao.lotes;
+        const loteReferencia = lotesDaRua[0];
+        const coords = getSafeCoord(loteReferencia);
+        const latCentro = coords[1];
+        const lonCentro = coords[0];
+        const nomeRua = loteReferencia.properties[keyEndereco];
+        const bairro = extrairBairro(loteReferencia.properties.END);
+        const ubsSet = new Set(lotesDaRua.map(lote => lote.properties[keyUbsLote]).filter(Boolean).map(ubs => ubs.trim().toLowerCase()));
+
+        initMap(latCentro, lonCentro);
+        const popupHTML = `<b>Logradouro Encontrado:</b><br><b>${nomeRua.toUpperCase()}</b><br>${formatarLinhaLocalizacao(bairro)}<br><b>CEP: consultando...</b>`;
+        L.marker([latCentro, lonCentro]).addTo(camadasBusca).bindPopup(popupHTML).openPopup();
+        let htmlResultado = `<b>Logradouro Encontrado:</b><br><b>${nomeRua.toUpperCase()}</b><br>${formatarLinhaLocalizacao(bairro)}<br><b>CEP: <span id="cep-selecionado">consultando...</span></b><br><br>`;
+        htmlResultado += ubsSet.size > 0 ? `Atravessa a área de abrangência de <b>${ubsSet.size}</b> UBS(s):<br><br>` : 'Endereço localizado, mas sem região de UBS atrelada no momento.';
+        const boundsGeral = L.latLngBounds([[latCentro, lonCentro]]);
+        if (dadosUbs && ubsSet.size > 0) {
+            turf.featureEach(dadosUbs, ubsPoligono => {
+                const nomeUbs = (ubsPoligono.properties.UBS || '').trim();
+                if (!ubsSet.has(nomeUbs.toLowerCase())) return;
+                const codigo = ubsPoligono.properties['Codigo microrregiao'] || ubsPoligono.properties.codigo_microrregiao || 'S/N';
+                const enderecoUbs = (ubsPoligono.properties.END || '').replace(/(\r\n|\n|\r)/gm, ' ');
+                const horarioUbs = (ubsPoligono.properties.Horario || '').replace(/(\r\n|\n|\r)/gm, ' ');
+                const argsPopup = `'${nomeUbs.replace(/'/g, "\\'")}', '${enderecoUbs.replace(/'/g, "\\'")}', '${horarioUbs.replace(/'/g, "\\'")}'`;
+                htmlResultado += `<div class="ubs-item">📍 <span class="ubs-clickable" onclick="abrirPopupUbs(${argsPopup})">UBS ${nomeUbs} - Cod. Microrregião (<b>${codigo}</b>)</span></div>`;
+                const camada = L.geoJSON(ubsPoligono, { style: { color: '#10b981', weight: 2.5, fillOpacity: 0.12 } }).addTo(camadasPoligonos);
+                boundsGeral.extend(camada.getBounds());
+                try {
+                    const centroide = turf.centroid(ubsPoligono).geometry.coordinates;
+                    L.marker([centroide[1], centroide[0]], {
+                        icon: L.divIcon({ className: 'rotulo-ubs', html: `<div>UBS ${nomeUbs.toUpperCase()}</div>`, iconSize: [160, 40], iconAnchor: [80, 20] }),
+                        interactive: false
+                    }).addTo(camadasPoligonos);
+                } catch (e) {}
+            });
+            htmlResultado += `<br><small style="font-weight:normal; opacity:0.85;"><i>${ubsSet.size > 1 ? 'Nota: Esta via abrange múltiplas regiões.<br>Para saber a UBS exata, inclua o número do imóvel.' : 'Nota: Quer saber o endereço? clique na sua UBS'}</i></small>`;
+        }
+        mostrarResultado(htmlResultado, ubsSet.size > 0 ? 'sucesso' : 'erro');
+        buscarCepPorCoordenada(latCentro, lonCentro, nomeRua, cep => {
+            const cepFormatado = formatarCep(cep) || 'não localizado';
+            const cepElemento = document.getElementById('cep-selecionado');
+            if (cepElemento) cepElemento.textContent = cepFormatado;
+            camadasBusca.eachLayer(layer => { if (layer.getPopup) layer.setPopupContent(popupHTML.replace('consultando...', cepFormatado)); });
+        });
+        if (boundsGeral.isValid()) map.fitBounds(boundsGeral, { padding: [30, 30] });
+        restaurarBotaoBusca();
+    }
+
+    function obterLotesCorrespondentes(busca) {
+        const correspondencias = [];
+        for (const [chave, lotes] of indexLotesPorRua.entries()) {
+            const pontuacao = pontuarNomeRua(chave, busca);
+            if (pontuacao >= 0) correspondencias.push({ chave, lotes, pontuacao });
+        }
+        return correspondencias.sort((a, b) => b.pontuacao - a.pontuacao);
+    }
+
+    function formatarCep(cep) {
+        if (!cep) return '';
+        const numeros = String(cep).replace(/\D/g, '');
+        return numeros.length === 8 ? `${numeros.slice(0, 5)}-${numeros.slice(5)}` : String(cep);
+    }
+
+    function buscarCepPorCoordenada(lat, lon, nomeRua, aoEncontrar) {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=${lat}&lon=${lon}&zoom=18&accept-language=pt-BR&email=geosaude.sorocaba.app@gmail.com`;
+        const cepValido = cep => /^\d{5}-?\d{3}$/.test(String(cep || '').trim());
+        const buscarNoViaCep = () => fetch(`https://viacep.com.br/ws/SP/Sorocaba/${encodeURIComponent(nomeRua)}/json/`)
+            .then(res => res.ok ? res.json() : [])
+            .then(resultados => {
+                if (!Array.isArray(resultados)) return null;
+                const resultadoRua = resultados.find(item => pontuarNomeRua(item.logradouro, nomeRua) >= 0 && cepValido(item.cep));
+                return resultadoRua ? resultadoRua.cep : null;
+            })
+            .catch(() => null);
+        const buscarNoNominatim = () => fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=10&accept-language=pt-BR&email=geosaude.sorocaba.app@gmail.com&q=${encodeURIComponent(`${nomeRua}, Sorocaba, SP`)}`)
+            .then(res => res.ok ? res.json() : [])
+            .then(resultados => {
+                const resultadoRua = resultados.find(item => pontuarNomeRua(obterNomeRua(item), nomeRua) >= 0 && cepValido(item.address && item.address.postcode));
+                return resultadoRua && resultadoRua.address ? resultadoRua.address.postcode : null;
+            })
+            .catch(() => null);
+
+        fetch(url).then(res => res.ok ? res.json() : null).then(data => {
+            const nomeRetornado = data && data.address ? (data.address.road || '') : '';
+            const cep = data && data.address ? data.address.postcode : null;
+            if (nomeRetornado && pontuarNomeRua(nomeRetornado, nomeRua) >= 0 && cepValido(cep)) return cep;
+            return buscarNoViaCep().then(cepViaCep => cepViaCep || buscarNoNominatim());
+        }).then(cepEncontrado => aoEncontrar(cepEncontrado || null)).catch(() => aoEncontrar(null));
+    }
+
     function initMap(lat, lon, zoom = 13) {
         const mapDiv = document.getElementById('map');
         mapDiv.style.display = 'block';
@@ -288,6 +725,8 @@ let pLotes = Promise.all([
     function gerarPopupNominatim(resultadoItem, numeroBuscado) {
         let displayName = resultadoItem.display_name;
         let road = resultadoItem.address ? (resultadoItem.address.road || resultadoItem.address.pedestrian || resultadoItem.address.square || resultadoItem.address.suburb || resultadoItem.name) : null;
+        let cep = resultadoItem.address ? formatarCep(resultadoItem.address.postcode) : '';
+        let bairro = obterBairroNominatim(resultadoItem);
         if (road) {
             let regexRoad = new RegExp(road + "([, -]*)", 'i');
             let restoEndereco = displayName.replace(regexRoad, '');
@@ -300,9 +739,9 @@ let pLotes = Promise.all([
                 restoEndereco = restoEndereco.replace(regexNum, '');
                 titulo += `, ${numeroBuscado} -</b> `;
             }
-            return `<b>Localização Encontrada:</b><br>${titulo}${restoEndereco}`;
+            return `<b>Localização Encontrada:</b><br>${titulo}${restoEndereco}<br>${formatarLinhaLocalizacao(bairro)}<br><b>CEP: ${cep || 'não localizado'}</b>`;
         }
-        return `<b>Localização Encontrada:</b><br>${displayName}`;
+        return `<b>Localização Encontrada:</b><br>${displayName}<br>${formatarLinhaLocalizacao(bairro)}<br><b>CEP: ${cep || 'não localizado'}</b>`;
     }
 
     function calcularExtensaoDentro(linhaString, poligono) {
@@ -348,29 +787,17 @@ let pLotes = Promise.all([
         if (!lotesDaRua || lotesDaRua.length === 0) return null;
         let nomeOficialRuaLote = lotesDaRua[0].properties[keyEndereco];
 
-       let exato = lotesDaRua.find(l => l.properties[keyNumero] !== null && parseInt(l.properties[keyNumero]) === numeroBuscado);
+        let exato = lotesDaRua.find(l => l.properties[keyNumero] !== null && parseInt(l.properties[keyNumero]) === numeroBuscado);
         if (exato) return { feature: exato, tipo: 'exato', nome: nomeOficialRuaLote, refFeatureUbsLote: exato };
-        
         let comNumeros = lotesDaRua.filter(l => l.properties[keyNumero] !== null && !isNaN(parseInt(l.properties[keyNumero])));
         if (comNumeros.length === 0) {
             return { feature: lotesDaRua[0], tipo: 'aproximado_rua', nome: nomeOficialRuaLote, refFeatureUbsLote: lotesDaRua[0] };
         }
 
-        // CORREÇÃO: Filtrar pela paridade (Par ou Ímpar) para manter no mesmo lado da rua
-        let isParBuscado = numeroBuscado % 2 === 0;
-        let comNumerosDoMesmoLado = comNumeros.filter(l => {
-            let numLote = parseInt(l.properties[keyNumero]);
-            return (numLote % 2 === 0) === isParBuscado;
-        });
-
-        // Fallback de segurança: Se a rua for anômala e não tiver nenhum número do mesmo lado cadastrado, 
-        // usamos todos os números para não quebrar a busca
-        let arrayParaBusca = comNumerosDoMesmoLado.length > 0 ? comNumerosDoMesmoLado : comNumeros;
-
-        arrayParaBusca.sort((a, b) => parseInt(a.properties[keyNumero]) - parseInt(b.properties[keyNumero]));
+        comNumeros.sort((a, b) => parseInt(a.properties[keyNumero]) - parseInt(b.properties[keyNumero]));
         let menor = null, maior = null;
 
-        for(let l of arrayParaBusca) {
+        for(let l of comNumeros) {
             let num = parseInt(l.properties[keyNumero]);
             if(num <= numeroBuscado) menor = l;
             if(num >= numeroBuscado && !maior) maior = l;
@@ -437,22 +864,18 @@ let pLotes = Promise.all([
                         }
                     }
         
-                    executarBuscaGeografica(data.logradouro + numeroAdicional);
+                    executarBuscaGeografica(data.logradouro + numeroAdicional, cepParaBusca);
                 }).catch((error) => {
-                    let msg = error.message;
-                    if (!msg || msg === "Failed to fetch") {
-                        let cepFormatado = cepParaBusca.substring(0, 5) + "-" + cepParaBusca.substring(5);
-                        msg = `Nenhum resultado para o CEP "${cepFormatado}". Você possui o nome do logradouro?`;
-                    }
-                    mostrarResultado(msg, "erro");
-                    restaurarBotaoBusca();
+                    const cepFormatado = cepParaBusca.substring(0, 5) + "-" + cepParaBusca.substring(5);
+                    mostrarResultado("ViaCEP não localizou o CEP. Consultando a base viária do OpenStreetMap...", "info");
+                    executarBuscaGeografica(cepFormatado);
                 });
         } else {
             executarBuscaGeografica(enderecoDigitado);
         }
     }
 
-    function executarBuscaGeografica(termoBusca) {
+    function executarBuscaGeografica(termoBusca, cepInformado = null) {
         const textoSemCep = termoBusca.replace(/\b\d{8}\b|\b\d{5}-?\d{3}\b/g, "").trim();
         const todosNumeros = textoSemCep.match(/\d+/g);
         const temNumero = todosNumeros !== null;
@@ -464,20 +887,26 @@ let pLotes = Promise.all([
             ruaSemNumeroImovel = textoSemCep.substring(0, idxUltimoNumero) + textoSemCep.substring(idxUltimoNumero + ultimoNumeroStr.length);
         }
 
-        let ruaNorm = normalizarApenasRua(ruaSemNumeroImovel);
-
         // =====================================================================
         // ROTA A: Processamento Local em Memória
         // =====================================================================
         if (indexLotesPorRua.size > 0) {
-            let lotesDaRua = indexLotesPorRua.get(ruaNorm);
-            if (!lotesDaRua) {
-                for (let [chave, lotes] of indexLotesPorRua.entries()) {
-                    if (chave.includes(ruaNorm) || ruaNorm.includes(chave)) {
-                        lotesDaRua = lotes;
-                        break;
-                    }
-                }
+            const correspondencias = obterLotesCorrespondentes(ruaSemNumeroImovel);
+            const melhorPontuacao = correspondencias.length > 0 ? correspondencias[0].pontuacao : -1;
+            const melhores = correspondencias.filter(item => item.pontuacao === melhorPontuacao);
+            let lotesDaRua = melhores.length > 0 ? melhores[0].lotes : null;
+
+            if (!temNumero && (melhores.length > 1 || (melhorPontuacao < 1000 && correspondencias.length > 1))) {
+                const opcoes = (melhores.length > 1 ? melhores : correspondencias.slice(0, 30)).map(item => ({
+                    nome: item.lotes[0].properties[keyEndereco],
+                    bairro: extrairBairro(item.lotes[0].properties.END),
+                    busca: item.lotes[0].properties[keyEndereco],
+                    lotes: item.lotes
+                }));
+                const nomesUnicos = [...new Map(opcoes.map(opcao => [opcao.nome, opcao])).values()];
+                mostrarOpcoesLogradouro(nomesUnicos, selecionarLogradouroLocal);
+                restaurarBotaoBusca();
+                return;
             }
 
             if (lotesDaRua && lotesDaRua.length > 0) {
@@ -488,14 +917,24 @@ let pLotes = Promise.all([
                         let nomeDaUbsAtribuidaNoLote = resultadoLote.refFeatureUbsLote.properties[keyUbsLote];
                         let coords = getSafeCoord(resultadoLote.feature);
                         let latCentro = coords[1], lonCentro = coords[0];
-                        let tipoTexto = resultadoLote.tipo === 'exato' ? '' : '<br><small style="color:#64748b; font-weight:normal;"><i>(A numeração exata não consta no mapeamento oficial. A localização foi aproximada de forma inteligente.)</i></small>';
-                        let popupHTML = `<b>Localização Encontrada:</b><br><b>${resultadoLote.nome.toUpperCase()}, ${numeroBuscado} -</b> Sorocaba, São Paulo, Brasil${tipoTexto}`;
+                        let bairroResultado = extrairBairro(resultadoLote.refFeatureUbsLote.properties.END);
+                        let cepResultadoInicial = formatarCep(cepInformado);
+                        let cepResultadoId = `cep-resultado-${++contadorCep}`;
+                        let tipoTexto = resultadoLote.tipo === 'exato' ? '' : '<br><small style="font-weight:normal; opacity: 0.85;"><i>(A numeração exata não consta no mapeamento oficial. A localização foi aproximada de forma inteligente.)</i></small>';
+                        let popupHTML = `<b>Logradouro Encontrado:</b><br><b>${resultadoLote.nome.toUpperCase()}, ${numeroBuscado}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: ${cepResultadoInicial || 'consultando...'}</b>${tipoTexto}`;
                         
                         initMap(latCentro, lonCentro);
                         L.marker([latCentro, lonCentro]).addTo(camadasBusca).bindPopup(popupHTML).openPopup();
+                        if (!cepInformado) buscarCepPorCoordenada(latCentro, lonCentro, resultadoLote.nome, cep => {
+                            const cepFormatado = formatarCep(cep) || 'não localizado';
+                            const popupAtualizado = `<b>Logradouro Encontrado:</b><br><b>${resultadoLote.nome.toUpperCase()}, ${numeroBuscado}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: ${cepFormatado}</b>${tipoTexto}`;
+                            camadasBusca.eachLayer(layer => { if (layer.getPopup) layer.setPopupContent(popupAtualizado); });
+                            const cepNoResultado = document.getElementById(cepResultadoId);
+                            if (cepNoResultado) cepNoResultado.textContent = cepFormatado;
+                        });
                         if (nomeDaUbsAtribuidaNoLote && dadosUbs) {
                             let ubsLimpa = nomeDaUbsAtribuidaNoLote.trim();
-                            let htmlRes = `📍 <b>Localização e Numeração identificadas!</b><br>Este imóvel é atendido pela:<br><br>`;
+                            let htmlRes = `<b>Logradouro Encontrado:</b><br><b>${resultadoLote.nome.toUpperCase()}, ${numeroBuscado}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: <span id="${cepResultadoId}">${cepResultadoInicial || 'consultando...'}</span></b><br><br>Este imóvel é atendido pela:<br><br>`;
                             turf.featureEach(dadosUbs, function (ubsPoligono) {
                                 let nomePoligonoLimpo = ubsPoligono.properties.UBS ? ubsPoligono.properties.UBS.trim() : "";
                                 if (nomePoligonoLimpo.toLowerCase() === ubsLimpa.toLowerCase()) {
@@ -516,7 +955,7 @@ let pLotes = Promise.all([
                                     } catch (e) {}
                                 }
                             });
-                            htmlRes += `<br><small style="color:#64748b; font-weight:normal;"><i>Nota: Quer saber o endereço? clique ou toque na sua UBS</i></small>`;
+                            htmlRes += `<br><small style="font-weight:normal; opacity:0.85;"><i>Nota: Quer saber o endereço? clique ou toque na sua UBS</i></small>`;
                             mostrarResultado(htmlRes, "sucesso");
                         } else {
                             mostrarResultado(`Endereço localizado, mas sem região de UBS atrelada no momento.`, "erro");
@@ -538,12 +977,22 @@ let pLotes = Promise.all([
                     let middleLote = lotesDaRua[Math.floor(lotesDaRua.length / 2)];
                     let coords = getSafeCoord(middleLote);
                     let latCentro = coords[1], lonCentro = coords[0];
+                    const cepResultadoInicial = formatarCep(cepInformado);
+                    const bairroResultado = extrairBairro(lotesDaRua[0].properties.END);
                     
                     initMap(latCentro, lonCentro);
-                    let popupHTML = `<b>Logradouro Encontrado:</b><br><b>${nomeOficialRuaLote.toUpperCase()}</b><br>Sorocaba, São Paulo, Brasil`;
+                    let popupHTML = `<b>Logradouro Encontrado:</b><br><b>${nomeOficialRuaLote.toUpperCase()}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: ${cepResultadoInicial || 'consultando...'}</b>`;
                     L.marker([latCentro, lonCentro]).addTo(camadasBusca).bindPopup(popupHTML).openPopup();
+                    const cepResultadoId = `cep-resultado-${++contadorCep}`;
+                    if (!cepInformado) buscarCepPorCoordenada(latCentro, lonCentro, nomeOficialRuaLote, cep => {
+                        const cepFormatado = formatarCep(cep) || 'não localizado';
+                        const popupAtualizado = `<b>Logradouro Encontrado:</b><br><b>${nomeOficialRuaLote.toUpperCase()}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: ${cepFormatado}</b>`;
+                        camadasBusca.eachLayer(layer => { if (layer.getPopup) layer.setPopupContent(popupAtualizado); });
+                        const cepNoResultado = document.getElementById(cepResultadoId);
+                        if (cepNoResultado) cepNoResultado.textContent = cepFormatado;
+                    });
                     if (ubsSet.size > 0 && dadosUbs) {
-                        let htmlRes = `Logradouro identificado!<br>Atravessa a área de abrangência de <b>${ubsSet.size}</b> UBS(s):<br><br>`;
+                        let htmlRes = `<b>Logradouro Encontrado:</b><br><b>${nomeOficialRuaLote.toUpperCase()}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: <span id="${cepResultadoId}">${cepResultadoInicial || 'consultando...'}</span></b><br><br>Atravessa a área de abrangência de <b>${ubsSet.size}</b> UBS(s):<br><br>`;
                         let boundsGeral = L.latLngBounds();
                         boundsGeral.extend([latCentro, lonCentro]);
                         turf.featureEach(dadosUbs, function (ubsPoligono) {
@@ -568,9 +1017,9 @@ let pLotes = Promise.all([
                             }
                         });
                         if (ubsSet.size > 1) {
-                            htmlRes += `<br><small style="color:#64748b; font-weight:normal;"><i>Nota: Esta via abrange múltiplas regiões.<br>Para saber a UBS exata, inclua o número do imóvel.</i><br>📍 Quer saber o endereço? clique na UBS</small>`;
+                            htmlRes += `<br><small style="font-weight:normal; opacity:0.85;"><i>Nota: Esta via abrange múltiplas regiões.<br>Para saber a UBS exata, inclua o número do imóvel.</i><br>📍 Quer saber o endereço? clique na UBS</small>`;
                         } else {
-                            htmlRes += `<br><small style="color:#64748b; font-weight:normal;"><i>Nota: Quer saber o endereço? clique na sua UBS</i></small>`;
+                            htmlRes += `<br><small style="font-weight:normal; opacity:0.85;"><i>Nota: Quer saber o endereço? clique na sua UBS</i></small>`;
                         }
                         mostrarResultado(htmlRes, "sucesso");
                         map.fitBounds(boundsGeral, { padding: [30, 30] });
@@ -591,14 +1040,30 @@ let pLotes = Promise.all([
         mostrarResultado("Consultando base da rede viária integral...", "info");
 
         const urlGeocode = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(buscaFinal)}&limit=5&accept-language=pt-BR&email=geosaude.sorocaba.app@gmail.com`;
-        fetch(urlGeocode, {
-    method: 'GET',
-    headers: { 'Accept': 'application/json' }
-})
-    .then(res => { if (!res.ok) throw new Error(`Erro de rede.`); return res.json(); })
+        fetch(urlGeocode)
+            .then(res => { if (!res.ok) throw new Error(`Erro de rede.`); return res.json(); })
             .then(resultados => {
                 if (resultados.length === 0) throw new Error("Endereço não encontrado na base de dados global.");
 
+                const nomesEncontrados = [...new Map(resultados
+                    .map(resultado => ({
+                        resultado,
+                        nome: obterNomeRua(resultado),
+                        bairro: resultado.address ? (resultado.address.suburb || resultado.address.neighbourhood || resultado.address.city_district || '') : ''
+                    }))
+                    .filter(item => item.nome)
+                    .map(item => [normalizarApenasRua(item.nome), item])).values()];
+                const buscaTemCep = /\b\d{5}-?\d{3}\b|\b\d{8}\b/.test(buscaGeografica);
+                if (!buscaTemCep && nomesEncontrados.length > 1) {
+                    mostrarOpcoesLogradouro(nomesEncontrados, opcao => {
+                        const bairro = opcao.bairro ? `, ${opcao.bairro}` : '';
+                        executarBuscaGeografica(`${opcao.nome}${bairro}`);
+                    });
+                    restaurarBotaoBusca();
+                    return;
+                }
+
+                resultados = ordenarResultadosPorNome(resultados, buscaGeografica);
                 let primeiroResultado = resultados[0];
                 let displayName = primeiroResultado.display_name ? primeiroResultado.display_name.toUpperCase() : "";
                 let inputOriginal = document.getElementById('endereco').value.trim().toUpperCase();
@@ -624,13 +1089,13 @@ let pLotes = Promise.all([
                 
                 let latCentro = parseFloat(resultados[0].lat);
                 let lonCentro = parseFloat(resultados[0].lon);
-                let popupHTML = gerarPopupNominatim(resultados[0], numeroBuscado);
+                let popupHTML = gerarPopupNominatim(primeiroResultado, numeroBuscado);
                 if (temNumero) {
                     renderizarMapaLinhaUbs(latCentro, lonCentro, true, popupHTML, null, resultados, nomeOficial);
                     restaurarBotaoBusca();
                 } else {
                     const urlOverpass = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(`[out:json][timeout:15];area["name"="Sorocaba"]->.a;way(area.a)["name"="${nomeOficial}"];out geom;`)}`;
-                   fetch(urlOverpass, { headers: { 'Accept': 'application/json' } })
+                    fetch(urlOverpass)
                         .then(res => res.ok ? res.json() : { elements: [] })
                         .then(overpassData => {
                             renderizarMapaLinhaUbs(latCentro, lonCentro, false, popupHTML, overpassData, resultados, nomeOficial);
@@ -657,6 +1122,9 @@ let pLotes = Promise.all([
         let ubsEncontradasFeatures = [];
         let ubsNomes = new Set();
         let boundsGeral = L.latLngBounds();
+        const resultadoPrincipal = resultadosNominatim && resultadosNominatim[0];
+        const bairroResultado = obterBairroNominatim(resultadoPrincipal);
+        const cepResultado = resultadoPrincipal && resultadoPrincipal.address ? formatarCep(resultadoPrincipal.address.postcode) : '';
 
         L.marker([latCentro, lonCentro]).addTo(camadasBusca).bindPopup(popupHtmlText).openPopup();
         boundsGeral.extend([latCentro, lonCentro]);
@@ -708,7 +1176,8 @@ let pLotes = Promise.all([
         }
 
         if (ubsEncontradasFeatures.length > 0) {
-            let htmlResultado = temNumero ? `📍 <b>Numeração identificada geograficamente!</b><br>Este endereço pertence à área de atendimento da:<br><br>` : `Logradouro identificado!<br>Atravessa a área de abrangência de <b>${ubsEncontradasFeatures.length}</b> UBS(s):<br><br>`;
+            let htmlResultado = `<b>Logradouro Encontrado:</b><br><b>${nomeOficial.toUpperCase()}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: ${cepResultado || 'não localizado'}</b><br><br>`;
+            htmlResultado += temNumero ? `📍 <b>Numeração identificada geograficamente!</b><br>Este endereço pertence à área de atendimento da:<br><br>` : `Atravessa a área de abrangência de <b>${ubsEncontradasFeatures.length}</b> UBS(s):<br><br>`;
             
             ubsEncontradasFeatures.forEach(feature => {
                 let nomeUbsLimpo = feature.properties.UBS ? feature.properties.UBS.trim() : "Desconhecida";
@@ -728,9 +1197,9 @@ let pLotes = Promise.all([
                 } catch (e) {}
             });
             if (!temNumero && ubsEncontradasFeatures.length > 1) {
-                htmlResultado += `<br><small style="color:#64748b; font-weight:normal;"><i>Nota: Esta via abrange múltiplas regiões.<br>Para saber a UBS exata, inclua o número do imóvel.</i><br>📍 Quer saber o endereço? clique na UBS</small>`;
+                htmlResultado += `<br><small style="font-weight:normal; opacity:0.85;"><i>Nota: Esta via abrange múltiplas regiões.<br>Para saber a UBS exata, inclua o número do imóvel.</i><br>📍 Quer saber o endereço? clique na UBS</small>`;
             } else {
-                htmlResultado += `<br><small style="color:#64748b; font-weight:normal;"><i>Nota: Quer saber o endereço? clique na sua UBS</i></small>`;
+                htmlResultado += `<br><small style="font-weight:normal; opacity:0.85;"><i>Nota: Quer saber o endereço? clique na sua UBS</i></small>`;
             }
 
             mostrarResultado(htmlResultado, "sucesso");
