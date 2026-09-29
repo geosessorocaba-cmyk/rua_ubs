@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Busca de Endereço por UBS - Sorocaba (SP)</title>
+    <meta name="description" content="Busca de endereço por UBS e área de abrangência em Sorocaba (SP). Localize sua Unidade Básica de Saúde por rua, número ou CEP.">
+    <meta property="og:title" content="Busca de Endereço por UBS - Sorocaba (SP)">
+    <meta property="og:description" content="Busca de endereço por UBS e área de abrangência em Sorocaba (SP). Localize sua Unidade Básica de Saúde por rua, número ou CEP.">
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -586,15 +589,112 @@
         if (event.target === document.getElementById('modal-logradouros')) fecharModalLogradouros();
     }
 
-    function extrairBairro(endereco) {
-        if (!endereco) return 'Bairro não informado';
-        const partes = endereco.split(' - ');
-        return partes.length > 1 ? partes[1].split(',')[0].trim() : 'Bairro não informado';
+    const cacheBairros = new Map();
+    const cacheCeps = new Map();
+
+    try {
+        const salvoBairros = localStorage.getItem('cache_bairros_sorocaba');
+        if (salvoBairros) {
+            Object.entries(JSON.parse(salvoBairros)).forEach(([k, v]) => cacheBairros.set(k, v));
+        }
+    } catch (e) {}
+
+    function salvarCacheBairros() {
+        try {
+            localStorage.setItem('cache_bairros_sorocaba', JSON.stringify(Object.fromEntries(cacheBairros)));
+        } catch (e) {}
+    }
+
+    function extrairBairroNominatim(address) {
+        if (!address) return '';
+        // Prioriza com máxima especificidade a subdivisão/loteamento do bairro
+        const candidatos = [
+            address.residential,
+            address.neighbourhood,
+            address.quarter,
+            address.suburb,
+            (address.city_district && address.city_district.toLowerCase() !== 'sorocaba' ? address.city_district : '')
+        ].filter(Boolean);
+
+        if (candidatos.length === 0) return '';
+        return candidatos[0];
+    }
+
+    function buscarDadosLogradouro(lat, lon, nomeRua, aoEncontrar) {
+        const chaveRua = normalizarApenasRua(nomeRua);
+        const chaveCoord = `${lat.toFixed(5)},${lon.toFixed(5)}`;
+
+        const bairroCache = cacheBairros.get(chaveRua) || cacheBairros.get(chaveCoord);
+        const cepCache = cacheCeps.get(chaveRua) || cacheCeps.get(chaveCoord);
+
+        if (bairroCache && cepCache) {
+            // Entrega assíncrona para garantir que o elemento DOM já exista no caller
+            setTimeout(() => {
+                aoEncontrar({ bairro: bairroCache, cep: cepCache });
+            }, 0);
+            return;
+        }
+
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=${lat}&lon=${lon}&zoom=18&accept-language=pt-BR&email=geosaude.sorocaba.app@gmail.com`;
+        fetch(url)
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                const addr = data && data.address ? data.address : null;
+                const bairroOSM = extrairBairroNominatim(addr);
+                const cepOSM = addr && addr.postcode ? addr.postcode : null;
+
+                if (bairroOSM) {
+                    cacheBairros.set(chaveRua, bairroOSM);
+                    cacheBairros.set(chaveCoord, bairroOSM);
+                    salvarCacheBairros();
+                }
+                if (cepOSM) {
+                    cacheCeps.set(chaveRua, cepOSM);
+                    cacheCeps.set(chaveCoord, cepOSM);
+                }
+
+                if (bairroOSM && cepOSM) {
+                    aoEncontrar({ bairro: bairroOSM, cep: cepOSM });
+                    return;
+                }
+
+                // Se faltou o bairro detalhado ou o CEP, consulta no Nominatim Search como fallback de precisão
+                const urlSearch = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&accept-language=pt-BR&email=geosaude.sorocaba.app@gmail.com&q=${encodeURIComponent(`${nomeRua}, Sorocaba, SP`)}`;
+                fetch(urlSearch)
+                    .then(r => r.ok ? r.json() : [])
+                    .then(resultados => {
+                        const item = resultados.find(r => pontuarNomeRua(obterNomeRua(r), nomeRua) >= 0 && extrairBairroNominatim(r.address));
+                        const alvo = item || resultados[0];
+                        const bNom = alvo && alvo.address ? extrairBairroNominatim(alvo.address) : '';
+                        const cNom = alvo && alvo.address ? alvo.address.postcode : null;
+
+                        const bFinal = bairroOSM || bNom || bairroCache || '';
+                        const cFinal = cepOSM || cNom || cepCache || null;
+
+                        if (bFinal) {
+                            cacheBairros.set(chaveRua, bFinal);
+                            cacheBairros.set(chaveCoord, bFinal);
+                            salvarCacheBairros();
+                        }
+                        if (cFinal) {
+                            cacheCeps.set(chaveRua, cFinal);
+                            cacheCeps.set(chaveCoord, cFinal);
+                        }
+
+                        aoEncontrar({ bairro: bFinal, cep: cFinal });
+                    })
+                    .catch(() => {
+                        aoEncontrar({ bairro: bairroOSM || bairroCache || '', cep: cepOSM || cepCache || null });
+                    });
+            })
+            .catch(() => {
+                aoEncontrar({ bairro: bairroCache || '', cep: cepCache || null });
+            });
     }
 
     function obterBairroNominatim(resultadoItem) {
         const endereco = resultadoItem && resultadoItem.address;
-        return endereco ? (endereco.suburb || endereco.neighbourhood || endereco.city_district || '') : '';
+        return extrairBairroNominatim(endereco);
     }
 
     function formatarLinhaLocalizacao(bairro) {
@@ -604,16 +704,45 @@
     function mostrarOpcoesLogradouro(opcoes, aoSelecionar) {
         const lista = document.getElementById('modal-logradouros-opcoes');
         lista.innerHTML = '';
-        opcoes.forEach(opcao => {
+        opcoes.forEach((opcao, idx) => {
             const botao = document.createElement('button');
             botao.type = 'button';
             botao.className = 'opcao-logradouro';
-            botao.innerHTML = `<b>${opcao.nome.toUpperCase()}</b><br><small>${opcao.bairro}</small>`;
+
+            const loteRef = opcao.lotes && opcao.lotes[0];
+            const coords = loteRef ? getSafeCoord(loteRef) : null;
+            const lat = coords ? coords[1] : null;
+            const lon = coords ? coords[0] : null;
+
+            const chaveRua = normalizarApenasRua(opcao.nome);
+            const bairroSalvo = cacheBairros.get(chaveRua);
+            const spanBairroId = `bairro-modal-item-${idx}`;
+
+            const bairroExibido = bairroSalvo || (opcao.bairro ? opcao.bairro : 'Consultando bairro...');
+            botao.innerHTML = `<b>${opcao.nome.toUpperCase()}</b><br><small id="${spanBairroId}">${bairroExibido}</small>`;
+
             botao.addEventListener('click', () => {
                 fecharModalLogradouros();
                 aoSelecionar(opcao);
             });
             lista.appendChild(botao);
+
+            if (!bairroSalvo && lat !== null && lon !== null) {
+                setTimeout(() => {
+                    buscarDadosLogradouro(lat, lon, opcao.nome, ({ bairro }) => {
+                        if (bairro) {
+                            opcao.bairro = bairro;
+                            cacheBairros.set(chaveRua, bairro);
+                            salvarCacheBairros();
+                            const el = document.getElementById(spanBairroId);
+                            if (el) el.textContent = bairro;
+                        } else {
+                            const el = document.getElementById(spanBairroId);
+                            if (el && el.textContent === 'Consultando bairro...') el.textContent = 'Sorocaba, SP';
+                        }
+                    });
+                }, idx * 120);
+            }
         });
         document.getElementById('modal-logradouros').style.display = 'flex';
     }
@@ -625,13 +754,18 @@
         const latCentro = coords[1];
         const lonCentro = coords[0];
         const nomeRua = loteReferencia.properties[keyEndereco];
-        const bairro = extrairBairro(loteReferencia.properties.END);
+        const chaveRua = normalizarApenasRua(nomeRua);
+        const bairroInicial = cacheBairros.get(chaveRua) || (opcao.bairro && opcao.bairro !== 'Bairro não informado' ? opcao.bairro : '');
         const ubsSet = new Set(lotesDaRua.map(lote => lote.properties[keyUbsLote]).filter(Boolean).map(ubs => ubs.trim().toLowerCase()));
 
         initMap(latCentro, lonCentro);
-        const popupHTML = `<b>Logradouro Encontrado:</b><br><b>${nomeRua.toUpperCase()}</b><br>${formatarLinhaLocalizacao(bairro)}<br><b>CEP: consultando...</b>`;
+        const bairroId = `bairro-selecionado-${++contadorCep}`;
+        const cepId = `cep-selecionado-${contadorCep}`;
+        const textoBairroHtml = bairroInicial ? formatarLinhaLocalizacao(bairroInicial) : `<span id="${bairroId}">localizando bairro...</span>`;
+
+        const popupHTML = `<b>Logradouro Encontrado:</b><br><b>${nomeRua.toUpperCase()}</b><br><span id="popup-${bairroId}">${bairroInicial ? formatarLinhaLocalizacao(bairroInicial) : 'localizando bairro...'}</span><br><b>CEP: <span id="popup-${cepId}">consultando...</span></b>`;
         L.marker([latCentro, lonCentro]).addTo(camadasBusca).bindPopup(popupHTML).openPopup();
-        let htmlResultado = `<b>Logradouro Encontrado:</b><br><b>${nomeRua.toUpperCase()}</b><br>${formatarLinhaLocalizacao(bairro)}<br><b>CEP: <span id="cep-selecionado">consultando...</span></b><br><br>`;
+        let htmlResultado = `<b>Logradouro Encontrado:</b><br><b>${nomeRua.toUpperCase()}</b><br>${textoBairroHtml}<br><b>CEP: <span id="${cepId}">consultando...</span></b><br><br>`;
         htmlResultado += ubsSet.size > 0 ? `Atravessa a área de abrangência de <b>${ubsSet.size}</b> UBS(s):<br><br>` : 'Endereço localizado, mas sem região de UBS atrelada no momento.';
         const boundsGeral = L.latLngBounds([[latCentro, lonCentro]]);
         if (dadosUbs && ubsSet.size > 0) {
@@ -656,11 +790,18 @@
             htmlResultado += `<br><small style="font-weight:normal; opacity:0.85;"><i>${ubsSet.size > 1 ? 'Nota: Esta via abrange múltiplas regiões.<br>Para saber a UBS exata, inclua o número do imóvel.' : 'Nota: Quer saber o endereço? clique na sua UBS'}</i></small>`;
         }
         mostrarResultado(htmlResultado, ubsSet.size > 0 ? 'sucesso' : 'erro');
-        buscarCepPorCoordenada(latCentro, lonCentro, nomeRua, cep => {
+        buscarDadosLogradouro(latCentro, lonCentro, nomeRua, ({ cep, bairro }) => {
             const cepFormatado = formatarCep(cep) || 'não localizado';
-            const cepElemento = document.getElementById('cep-selecionado');
-            if (cepElemento) cepElemento.textContent = cepFormatado;
-            camadasBusca.eachLayer(layer => { if (layer.getPopup) layer.setPopupContent(popupHTML.replace('consultando...', cepFormatado)); });
+            const bairroFinal = bairro || bairroInicial;
+            const linhaBairro = formatarLinhaLocalizacao(bairroFinal);
+
+            const elCep = document.getElementById(cepId);
+            if (elCep) elCep.textContent = cepFormatado;
+            const elBairro = document.getElementById(bairroId);
+            if (elBairro) elBairro.textContent = linhaBairro;
+
+            const popupAtualizado = `<b>Logradouro Encontrado:</b><br><b>${nomeRua.toUpperCase()}</b><br>${linhaBairro}<br><b>CEP: ${cepFormatado}</b>`;
+            camadasBusca.eachLayer(layer => { if (layer.getPopup) layer.setPopupContent(popupAtualizado); });
         });
         if (boundsGeral.isValid()) map.fitBounds(boundsGeral, { padding: [30, 30] });
         restaurarBotaoBusca();
@@ -722,26 +863,12 @@
         setTimeout(() => { map.invalidateSize(); }, 200);
     }
 
-    function gerarPopupNominatim(resultadoItem, numeroBuscado) {
-        let displayName = resultadoItem.display_name;
-        let road = resultadoItem.address ? (resultadoItem.address.road || resultadoItem.address.pedestrian || resultadoItem.address.square || resultadoItem.address.suburb || resultadoItem.name) : null;
-        let cep = resultadoItem.address ? formatarCep(resultadoItem.address.postcode) : '';
-        let bairro = obterBairroNominatim(resultadoItem);
-        if (road) {
-            let regexRoad = new RegExp(road + "([, -]*)", 'i');
-            let restoEndereco = displayName.replace(regexRoad, '');
-            restoEndereco = restoEndereco.replace(/^[, -\s]+/, ''); 
-            let titulo = `<b>${road.toUpperCase()}`;
-            if (!numeroBuscado) {
-                titulo += ` -</b> `;
-            } else {
-                let regexNum = new RegExp('^' + numeroBuscado + '([, -]*)', 'i');
-                restoEndereco = restoEndereco.replace(regexNum, '');
-                titulo += `, ${numeroBuscado} -</b> `;
-            }
-            return `<b>Localização Encontrada:</b><br>${titulo}${restoEndereco}<br>${formatarLinhaLocalizacao(bairro)}<br><b>CEP: ${cep || 'não localizado'}</b>`;
-        }
-        return `<b>Localização Encontrada:</b><br>${displayName}<br>${formatarLinhaLocalizacao(bairro)}<br><b>CEP: ${cep || 'não localizado'}</b>`;
+    function gerarPopupNominatim(resultadoItem, numeroBuscado, cepInformado = null) {
+        let road = resultadoItem.address ? (resultadoItem.address.road || resultadoItem.address.pedestrian || resultadoItem.address.square || resultadoItem.address.suburb || resultadoItem.name) : (resultadoItem.name || 'Logradouro');
+        let cep = formatarCep(cepInformado) || (resultadoItem.address ? formatarCep(resultadoItem.address.postcode) : '');
+        let bairro = extrairBairroNominatim(resultadoItem.address);
+        let numTexto = numeroBuscado ? `, ${numeroBuscado}` : '';
+        return `<b>Logradouro Encontrado:</b><br><b>${road.toUpperCase()}${numTexto}</b><br>${formatarLinhaLocalizacao(bairro)}<br><b>CEP: ${cep || 'não localizado'}</b>`;
     }
 
     function calcularExtensaoDentro(linhaString, poligono) {
@@ -853,6 +980,12 @@
                         let cepFormatado = cepParaBusca.substring(0, 5) + "-" + cepParaBusca.substring(5);
                         throw new Error(`Nenhum resultado para o CEP "${cepFormatado}". Você possui o nome do logradouro?`);
                     }
+                    const chaveRua = normalizarApenasRua(data.logradouro);
+                    cacheCeps.set(chaveRua, cepParaBusca);
+                    
+                    // Nota: Não inserimos data.bairro em cacheBairros aqui para evitar sobrescrever
+                    // com o macro-bairro genérico do Correios (ex: Wanel Ville vs Jardim Wanel Ville I).
+                    // O motor de geolocalização cuidará de obter o bairro no nível de maior detalhamento.
                     
                     const strSemCep = enderecoDigitado.replace(new RegExp(cepMatch ? cepMatch[0] : cepParaBusca, 'g'), '');
                     const todosNumerosOriginal = strSemCep.match(/\d+/g);
@@ -868,7 +1001,7 @@
                 }).catch((error) => {
                     const cepFormatado = cepParaBusca.substring(0, 5) + "-" + cepParaBusca.substring(5);
                     mostrarResultado("ViaCEP não localizou o CEP. Consultando a base viária do OpenStreetMap...", "info");
-                    executarBuscaGeografica(cepFormatado);
+                    executarBuscaGeografica(cepFormatado, cepParaBusca);
                 });
         } else {
             executarBuscaGeografica(enderecoDigitado);
@@ -876,6 +1009,7 @@
     }
 
     function executarBuscaGeografica(termoBusca, cepInformado = null) {
+        const buscaGeografica = termoBusca;
         const textoSemCep = termoBusca.replace(/\b\d{8}\b|\b\d{5}-?\d{3}\b/g, "").trim();
         const todosNumeros = textoSemCep.match(/\d+/g);
         const temNumero = todosNumeros !== null;
@@ -897,12 +1031,15 @@
             let lotesDaRua = melhores.length > 0 ? melhores[0].lotes : null;
 
             if (!temNumero && (melhores.length > 1 || (melhorPontuacao < 1000 && correspondencias.length > 1))) {
-                const opcoes = (melhores.length > 1 ? melhores : correspondencias.slice(0, 30)).map(item => ({
-                    nome: item.lotes[0].properties[keyEndereco],
-                    bairro: extrairBairro(item.lotes[0].properties.END),
-                    busca: item.lotes[0].properties[keyEndereco],
-                    lotes: item.lotes
-                }));
+                const opcoes = (melhores.length > 1 ? melhores : correspondencias.slice(0, 30)).map(item => {
+                    const chaveRua = normalizarApenasRua(item.lotes[0].properties[keyEndereco]);
+                    return {
+                        nome: item.lotes[0].properties[keyEndereco],
+                        bairro: cacheBairros.get(chaveRua) || '',
+                        busca: item.lotes[0].properties[keyEndereco],
+                        lotes: item.lotes
+                    };
+                });
                 const nomesUnicos = [...new Map(opcoes.map(opcao => [opcao.nome, opcao])).values()];
                 mostrarOpcoesLogradouro(nomesUnicos, selecionarLogradouroLocal);
                 restaurarBotaoBusca();
@@ -917,24 +1054,27 @@
                         let nomeDaUbsAtribuidaNoLote = resultadoLote.refFeatureUbsLote.properties[keyUbsLote];
                         let coords = getSafeCoord(resultadoLote.feature);
                         let latCentro = coords[1], lonCentro = coords[0];
-                        let bairroResultado = extrairBairro(resultadoLote.refFeatureUbsLote.properties.END);
-                        let cepResultadoInicial = formatarCep(cepInformado);
+                        let chaveRua = normalizarApenasRua(resultadoLote.nome);
+                        let chaveCoord = `${latCentro.toFixed(5)},${lonCentro.toFixed(5)}`;
+
+                        let bairroInicial = cacheBairros.get(chaveRua) || cacheBairros.get(chaveCoord) || '';
+                        let cepResultadoInicial = formatarCep(cepInformado) || formatarCep(cacheCeps.get(chaveRua)) || formatarCep(cacheCeps.get(chaveCoord)) || '';
+                        
                         let cepResultadoId = `cep-resultado-${++contadorCep}`;
+                        let bairroResultadoId = `bairro-resultado-${contadorCep}`;
                         let tipoTexto = resultadoLote.tipo === 'exato' ? '' : '<br><small style="font-weight:normal; opacity: 0.85;"><i>(A numeração exata não consta no mapeamento oficial. A localização foi aproximada de forma inteligente.)</i></small>';
-                        let popupHTML = `<b>Logradouro Encontrado:</b><br><b>${resultadoLote.nome.toUpperCase()}, ${numeroBuscado}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: ${cepResultadoInicial || 'consultando...'}</b>${tipoTexto}`;
+
+                        let textoBairroHtml = bairroInicial ? formatarLinhaLocalizacao(bairroInicial) : `<span id="${bairroResultadoId}">localizando bairro...</span>`;
+                        let textoCepHtml = cepResultadoInicial ? cepResultadoInicial : `<span id="${cepResultadoId}">consultando...</span>`;
+
+                        let popupHTML = `<b>Logradouro Encontrado:</b><br><b>${resultadoLote.nome.toUpperCase()}, ${numeroBuscado}</b><br><span id="popup-${bairroResultadoId}">${bairroInicial ? formatarLinhaLocalizacao(bairroInicial) : 'localizando bairro...'}</span><br><b>CEP: <span id="popup-${cepResultadoId}">${cepResultadoInicial || 'consultando...'}</span></b>${tipoTexto}`;
                         
                         initMap(latCentro, lonCentro);
                         L.marker([latCentro, lonCentro]).addTo(camadasBusca).bindPopup(popupHTML).openPopup();
-                        if (!cepInformado) buscarCepPorCoordenada(latCentro, lonCentro, resultadoLote.nome, cep => {
-                            const cepFormatado = formatarCep(cep) || 'não localizado';
-                            const popupAtualizado = `<b>Logradouro Encontrado:</b><br><b>${resultadoLote.nome.toUpperCase()}, ${numeroBuscado}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: ${cepFormatado}</b>${tipoTexto}`;
-                            camadasBusca.eachLayer(layer => { if (layer.getPopup) layer.setPopupContent(popupAtualizado); });
-                            const cepNoResultado = document.getElementById(cepResultadoId);
-                            if (cepNoResultado) cepNoResultado.textContent = cepFormatado;
-                        });
+
                         if (nomeDaUbsAtribuidaNoLote && dadosUbs) {
                             let ubsLimpa = nomeDaUbsAtribuidaNoLote.trim();
-                            let htmlRes = `<b>Logradouro Encontrado:</b><br><b>${resultadoLote.nome.toUpperCase()}, ${numeroBuscado}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: <span id="${cepResultadoId}">${cepResultadoInicial || 'consultando...'}</span></b><br><br>Este imóvel é atendido pela:<br><br>`;
+                            let htmlRes = `<b>Logradouro Encontrado:</b><br><b>${resultadoLote.nome.toUpperCase()}, ${numeroBuscado}</b><br><span id="bloco-${bairroResultadoId}">${textoBairroHtml}</span><br><b>CEP: ${cepResultadoInicial ? `<span id="${cepResultadoId}">${cepResultadoInicial}</span>` : textoCepHtml}</b><br><br>Este imóvel é atendido pela:<br><br>`;
                             turf.featureEach(dadosUbs, function (ubsPoligono) {
                                 let nomePoligonoLimpo = ubsPoligono.properties.UBS ? ubsPoligono.properties.UBS.trim() : "";
                                 if (nomePoligonoLimpo.toLowerCase() === ubsLimpa.toLowerCase()) {
@@ -963,6 +1103,25 @@
                         
                         map.setView([latCentro, lonCentro], 19);
                         restaurarBotaoBusca();
+
+                        // Enriquecimento e sincronização em segundo plano garantindo elementos já presentes no DOM
+                        buscarDadosLogradouro(latCentro, lonCentro, resultadoLote.nome, ({ cep, bairro }) => {
+                            const cepFormatado = cepResultadoInicial || formatarCep(cep) || 'não localizado';
+                            const bairroFinal = bairro || bairroInicial;
+                            const linhaBairro = formatarLinhaLocalizacao(bairroFinal);
+
+                            const popupAtualizado = `<b>Logradouro Encontrado:</b><br><b>${resultadoLote.nome.toUpperCase()}, ${numeroBuscado}</b><br>${linhaBairro}<br><b>CEP: ${cepFormatado}</b>${tipoTexto}`;
+                            camadasBusca.eachLayer(layer => { if (layer.getPopup) layer.setPopupContent(popupAtualizado); });
+
+                            const cepNoResultado = document.getElementById(cepResultadoId);
+                            if (cepNoResultado) cepNoResultado.textContent = cepFormatado;
+
+                            const bairroNoResultado = document.getElementById(bairroResultadoId);
+                            if (bairroNoResultado) bairroNoResultado.textContent = linhaBairro;
+                            const blocoBairro = document.getElementById(`bloco-${bairroResultadoId}`);
+                            if (blocoBairro && bairroFinal) blocoBairro.innerHTML = linhaBairro;
+                        });
+
                         return;
                     }
                 } else {
@@ -977,22 +1136,23 @@
                     let middleLote = lotesDaRua[Math.floor(lotesDaRua.length / 2)];
                     let coords = getSafeCoord(middleLote);
                     let latCentro = coords[1], lonCentro = coords[0];
-                    const cepResultadoInicial = formatarCep(cepInformado);
-                    const bairroResultado = extrairBairro(lotesDaRua[0].properties.END);
-                    
-                    initMap(latCentro, lonCentro);
-                    let popupHTML = `<b>Logradouro Encontrado:</b><br><b>${nomeOficialRuaLote.toUpperCase()}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: ${cepResultadoInicial || 'consultando...'}</b>`;
-                    L.marker([latCentro, lonCentro]).addTo(camadasBusca).bindPopup(popupHTML).openPopup();
+                    let chaveRua = normalizarApenasRua(nomeOficialRuaLote);
+                    let chaveCoord = `${latCentro.toFixed(5)},${lonCentro.toFixed(5)}`;
+
+                    let bairroInicial = cacheBairros.get(chaveRua) || cacheBairros.get(chaveCoord) || '';
+                    const cepResultadoInicial = formatarCep(cepInformado) || formatarCep(cacheCeps.get(chaveRua)) || formatarCep(cacheCeps.get(chaveCoord)) || '';
+
                     const cepResultadoId = `cep-resultado-${++contadorCep}`;
-                    if (!cepInformado) buscarCepPorCoordenada(latCentro, lonCentro, nomeOficialRuaLote, cep => {
-                        const cepFormatado = formatarCep(cep) || 'não localizado';
-                        const popupAtualizado = `<b>Logradouro Encontrado:</b><br><b>${nomeOficialRuaLote.toUpperCase()}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: ${cepFormatado}</b>`;
-                        camadasBusca.eachLayer(layer => { if (layer.getPopup) layer.setPopupContent(popupAtualizado); });
-                        const cepNoResultado = document.getElementById(cepResultadoId);
-                        if (cepNoResultado) cepNoResultado.textContent = cepFormatado;
-                    });
+                    const bairroResultadoId = `bairro-resultado-${contadorCep}`;
+                    const textoBairroHtml = bairroInicial ? formatarLinhaLocalizacao(bairroInicial) : `<span id="${bairroResultadoId}">localizando bairro...</span>`;
+                    const textoCepHtml = cepResultadoInicial ? cepResultadoInicial : `<span id="${cepResultadoId}">consultando...</span>`;
+
+                    initMap(latCentro, lonCentro);
+                    let popupHTML = `<b>Logradouro Encontrado:</b><br><b>${nomeOficialRuaLote.toUpperCase()}</b><br><span id="popup-${bairroResultadoId}">${bairroInicial ? formatarLinhaLocalizacao(bairroInicial) : 'localizando bairro...'}</span><br><b>CEP: <span id="popup-${cepResultadoId}">${cepResultadoInicial || 'consultando...'}</span></b>`;
+                    L.marker([latCentro, lonCentro]).addTo(camadasBusca).bindPopup(popupHTML).openPopup();
+
                     if (ubsSet.size > 0 && dadosUbs) {
-                        let htmlRes = `<b>Logradouro Encontrado:</b><br><b>${nomeOficialRuaLote.toUpperCase()}</b><br>${formatarLinhaLocalizacao(bairroResultado)}<br><b>CEP: <span id="${cepResultadoId}">${cepResultadoInicial || 'consultando...'}</span></b><br><br>Atravessa a área de abrangência de <b>${ubsSet.size}</b> UBS(s):<br><br>`;
+                        let htmlRes = `<b>Logradouro Encontrado:</b><br><b>${nomeOficialRuaLote.toUpperCase()}</b><br><span id="bloco-${bairroResultadoId}">${textoBairroHtml}</span><br><b>CEP: <span id="${cepResultadoId}">${textoCepHtml}</span></b><br><br>Atravessa a área de abrangência de <b>${ubsSet.size}</b> UBS(s):<br><br>`;
                         let boundsGeral = L.latLngBounds();
                         boundsGeral.extend([latCentro, lonCentro]);
                         turf.featureEach(dadosUbs, function (ubsPoligono) {
@@ -1028,6 +1188,25 @@
                         map.setView([latCentro, lonCentro], 15);
                     }
                     restaurarBotaoBusca();
+
+                    // Enriquecimento e sincronização em segundo plano garantindo elementos já presentes no DOM
+                    buscarDadosLogradouro(latCentro, lonCentro, nomeOficialRuaLote, ({ cep, bairro }) => {
+                        const cepFormatado = cepResultadoInicial || formatarCep(cep) || 'não localizado';
+                        const bairroFinal = bairro || bairroInicial;
+                        const linhaBairro = formatarLinhaLocalizacao(bairroFinal);
+
+                        const popupAtualizado = `<b>Logradouro Encontrado:</b><br><b>${nomeOficialRuaLote.toUpperCase()}</b><br>${linhaBairro}<br><b>CEP: ${cepFormatado}</b>`;
+                        camadasBusca.eachLayer(layer => { if (layer.getPopup) layer.setPopupContent(popupAtualizado); });
+
+                        const cepNoResultado = document.getElementById(cepResultadoId);
+                        if (cepNoResultado) cepNoResultado.textContent = cepFormatado;
+
+                        const bairroNoResultado = document.getElementById(bairroResultadoId);
+                        if (bairroNoResultado) bairroNoResultado.textContent = linhaBairro;
+                        const blocoBairro = document.getElementById(`bloco-${bairroResultadoId}`);
+                        if (blocoBairro && bairroFinal) blocoBairro.innerHTML = linhaBairro;
+                    });
+
                     return;
                 }
             }
@@ -1039,7 +1218,7 @@
         const buscaFinal = termoBusca.toLowerCase().includes("sorocaba") ? termoBusca : `${termoBusca}, Sorocaba, SP`;
         mostrarResultado("Consultando base da rede viária integral...", "info");
 
-        const urlGeocode = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(buscaFinal)}&limit=5&accept-language=pt-BR&email=geosaude.sorocaba.app@gmail.com`;
+        const urlGeocode = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&polygon_geojson=1&q=${encodeURIComponent(buscaFinal)}&limit=5&accept-language=pt-BR&email=geosaude.sorocaba.app@gmail.com`;
         fetch(urlGeocode)
             .then(res => { if (!res.ok) throw new Error(`Erro de rede.`); return res.json(); })
             .then(resultados => {
@@ -1049,7 +1228,7 @@
                     .map(resultado => ({
                         resultado,
                         nome: obterNomeRua(resultado),
-                        bairro: resultado.address ? (resultado.address.suburb || resultado.address.neighbourhood || resultado.address.city_district || '') : ''
+                        bairro: extrairBairroNominatim(resultado.address)
                     }))
                     .filter(item => item.nome)
                     .map(item => [normalizarApenasRua(item.nome), item])).values()];
@@ -1089,20 +1268,20 @@
                 
                 let latCentro = parseFloat(resultados[0].lat);
                 let lonCentro = parseFloat(resultados[0].lon);
-                let popupHTML = gerarPopupNominatim(primeiroResultado, numeroBuscado);
+                let popupHTML = gerarPopupNominatim(primeiroResultado, numeroBuscado, cepInformado);
                 if (temNumero) {
-                    renderizarMapaLinhaUbs(latCentro, lonCentro, true, popupHTML, null, resultados, nomeOficial);
+                    renderizarMapaLinhaUbs(latCentro, lonCentro, true, popupHTML, null, resultados, nomeOficial, cepInformado);
                     restaurarBotaoBusca();
                 } else {
                     const urlOverpass = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(`[out:json][timeout:15];area["name"="Sorocaba"]->.a;way(area.a)["name"="${nomeOficial}"];out geom;`)}`;
                     fetch(urlOverpass)
                         .then(res => res.ok ? res.json() : { elements: [] })
                         .then(overpassData => {
-                            renderizarMapaLinhaUbs(latCentro, lonCentro, false, popupHTML, overpassData, resultados, nomeOficial);
+                            renderizarMapaLinhaUbs(latCentro, lonCentro, false, popupHTML, overpassData, resultados, nomeOficial, cepInformado);
                             restaurarBotaoBusca();
                         })
                         .catch(() => {
-                            renderizarMapaLinhaUbs(latCentro, lonCentro, false, popupHTML, null, resultados, nomeOficial);
+                            renderizarMapaLinhaUbs(latCentro, lonCentro, false, popupHTML, null, resultados, nomeOficial, cepInformado);
                             restaurarBotaoBusca();
                         });
                 }
@@ -1117,14 +1296,22 @@
             });
     }
 
-    function renderizarMapaLinhaUbs(latCentro, lonCentro, temNumero, popupHtmlText, overpassData, resultadosNominatim, nomeOficial) {
+    function renderizarMapaLinhaUbs(latCentro, lonCentro, temNumero, popupHtmlText, overpassData, resultadosNominatim, nomeOficial, cepInformado = null) {
         initMap(latCentro, lonCentro);
         let ubsEncontradasFeatures = [];
         let ubsNomes = new Set();
         let boundsGeral = L.latLngBounds();
         const resultadoPrincipal = resultadosNominatim && resultadosNominatim[0];
-        const bairroResultado = obterBairroNominatim(resultadoPrincipal);
-        const cepResultado = resultadoPrincipal && resultadoPrincipal.address ? formatarCep(resultadoPrincipal.address.postcode) : '';
+        const bairroResultado = extrairBairroNominatim(resultadoPrincipal && resultadoPrincipal.address);
+        const cepResultado = formatarCep(cepInformado) || (resultadoPrincipal && resultadoPrincipal.address ? formatarCep(resultadoPrincipal.address.postcode) : '');
+
+        if (bairroResultado) {
+            cacheBairros.set(normalizarApenasRua(nomeOficial), bairroResultado);
+            salvarCacheBairros();
+        }
+        if (cepResultado) {
+            cacheCeps.set(normalizarApenasRua(nomeOficial), cepResultado);
+        }
 
         L.marker([latCentro, lonCentro]).addTo(camadasBusca).bindPopup(popupHtmlText).openPopup();
         boundsGeral.extend([latCentro, lonCentro]);
@@ -1144,10 +1331,12 @@
             }
         }
 
-        if (temNumero) {
-            let pontoTurf = turf.point([lonCentro, latCentro]);
-            verificarPoligonosIntersectados(pontoTurf);
-        } else {
+        // 1. Sempre testa as coordenadas centrais do logradouro garantindo localização imediata
+        let pontoTurf = turf.point([lonCentro, latCentro]);
+        verificarPoligonosIntersectados(pontoTurf);
+
+        // 2. Se for busca de via inteira (sem número), busca extensão completa via Overpass ou geometria Nominatim
+        if (!temNumero) {
             let achouNoOverpass = false;
             if (overpassData && overpassData.elements && overpassData.elements.length > 0) {
                 overpassData.elements.forEach(el => {
@@ -1162,7 +1351,7 @@
             }
 
             if (!achouNoOverpass && resultadosNominatim && nomeOficial) {
-                let alvosGeograficos = resultadosNominatim.filter(r => r.name === nomeOficial).slice(0, 50);
+                let alvosGeograficos = resultadosNominatim.filter(r => r.name === nomeOficial || (r.address && r.address.road === nomeOficial)).slice(0, 50);
                 if (alvosGeograficos.length === 0) alvosGeograficos = [resultadosNominatim[0]];
                 alvosGeograficos.forEach(alvo => {
                     if (alvo.geojson) {
@@ -1172,6 +1361,38 @@
                         verificarPoligonosIntersectados(featureElemento);
                     }
                 });
+            }
+        }
+
+        // 3. Tolerância Inteligente: se nenhuma UBS foi intersectada diretamente (ex: via sobre a divisa de bairro ou margem de GPS),
+        // atribui à UBS com polígono mais próximo dentro do município de Sorocaba
+        if (ubsEncontradasFeatures.length === 0 && dadosUbs) {
+            let ubsMaisProxima = null;
+            let menorDistancia = Infinity;
+            turf.featureEach(dadosUbs, function (ubsPoligono) {
+                try {
+                    let d = turf.pointToPolygonDistance(pontoTurf, ubsPoligono, {units: 'meters'});
+                    if (d < menorDistancia) {
+                        menorDistancia = d;
+                        ubsMaisProxima = ubsPoligono;
+                    }
+                } catch(e) {
+                    try {
+                        let c = turf.centroid(ubsPoligono);
+                        let d = turf.distance(pontoTurf, c, {units: 'meters'});
+                        if (d < menorDistancia) {
+                            menorDistancia = d;
+                            ubsMaisProxima = ubsPoligono;
+                        }
+                    } catch(err) {}
+                }
+            });
+            if (ubsMaisProxima && menorDistancia <= 800) {
+                let nomeUbs = ubsMaisProxima.properties.UBS;
+                if (nomeUbs && !ubsNomes.has(nomeUbs)) {
+                    ubsNomes.add(nomeUbs);
+                    ubsEncontradasFeatures.push(ubsMaisProxima);
+                }
             }
         }
 
