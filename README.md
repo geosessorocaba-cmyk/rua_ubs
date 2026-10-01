@@ -242,4 +242,4 @@ _Biologo, Mestre pela Universidade de São Paulo - USP, entusiasta de Inteligên
 
 ## 📄 Licença e Declaração de Uso
 
-Este projeto é **NÃO oficial**. Embora tenha sido idealizado e desenvolvido por um servidor público lotado na **Secretaria da Saúde do Município de Sorocaba (SP)**, destina-se a fins de **uso institucional público, acadêmico e educacional**, concebido com o propósito de aprimorar os serviços públicos de saúde municipal prestados à população de Sorocaba (SP), facilitar o trabalho de equipes de saúde e vigilância sanitária/epidemiológica e promover a cidadania e a transparência pública no Sistema Único de Saúde (SUS).
+Este projeto é **NÃO oficial**. Embora tenha sido idealizado e desenvolvido por servidores públicos lotados na **Secretaria da Saúde do Município de Sorocaba (SP)**, destina-se a fins de **uso institucional público, acadêmico e educacional**, concebido com o propósito de aprimorar os serviços públicos de saúde municipal prestados à população de Sorocaba (SP), facilitar o trabalho de equipes de saúde e vigilância sanitária/epidemiológica e promover a cidadania e a transparência pública no Sistema Único de Saúde (SUS).
