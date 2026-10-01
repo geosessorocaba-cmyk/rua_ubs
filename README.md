@@ -216,7 +216,6 @@ A aplicação classifica dinamicamente o comportamento territorial do logradouro
 *Servidor Público Municipal na Secretaria da Saúde de Sorocaba (SP)*  
 *Desenvolvedor de Software & Cientista de Dados*  
 - **Email:** [samuel.abreux@gmail.com](mailto:samuel.abreux@gmail.com)  
-- **LinkedIn / GitHub:** [samuel.abreux@gmail.com](mailto:samuel.abreux@gmail.com)  
 - **Especialidades:** Geoprocessamento e Engenharia Geoespacial (QGIS/GIS), Modelagem de Dados Territoriais em Saúde Pública, Arquitetura de Aplicações Web de Alta Performance e Modernização Tecnológica no Setor Público.
 
 ##
