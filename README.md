@@ -219,6 +219,10 @@ A aplicação classifica dinamicamente o comportamento territorial do logradouro
 - **LinkedIn / GitHub:** [samuel.abreux@gmail.com](mailto:samuel.abreux@gmail.com)  
 - **Especialidades:** Geoprocessamento e Engenharia Geoespacial (QGIS/GIS), Modelagem de Dados Territoriais em Saúde Pública, Arquitetura de Aplicações Web de Alta Performance e Modernização Tecnológica no Setor Público.
 
+##
+**João Enser:**  
+_Biologo, Mestre pela Universidade de São Paulo - USP, entusiasta de Inteligência Artificial e Ciencia de Dados / Servidor Púiblico da Divisão de Zoonoses no Setor de Vigilância e Saúde de Sorocaba - SP_
+
 ---
 
 ## 👥 Créditos Institucionais
@@ -234,10 +238,6 @@ A aplicação classifica dinamicamente o comportamento territorial do logradouro
   - Delimitação Territorial das 33 Unidades Básicas de Saúde (SES Sorocaba).
   - OpenStreetMap & Contribuidores.
   - Empresa Brasileira de Correios e Telégrafos (ViaCEP).
-
-##
-**João Enser:**  
-_Biologo, Mestre pela Universidade de São Paulo - USP, entusiasta de Inteligência Artificial e Ciencia de Dados / Servidor Púiblico da Divisão de Zoonoses no Setor de Vigilância e Saúde de Sorocaba - SP_
 
 ---
 
