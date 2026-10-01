@@ -210,7 +210,7 @@ A aplicação classifica dinamicamente o comportamento territorial do logradouro
 
 ---
 
-## 👤 Autor
+## 👤 Autores:
 
 **Samuel Abreu**  
 *Servidor Público Municipal na Secretaria da Saúde de Sorocaba (SP)*  
